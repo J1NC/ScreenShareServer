@@ -5,13 +5,13 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var randomString = require('randomstring');
 var server = require('net');
+
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
-
-var http = require('http').createServer(app);
-var io = require('socket.io') (http);
+var appServer = app.listen(3000);
+var io = require('socket.io').listen(appServer);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -22,13 +22,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'node_modules')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-
-app.listen('3000', () => {
-  console.log('server listened in 3000');
-});
 
 let hostIp = new Array();
 let hostId = new Array();
@@ -61,22 +58,27 @@ app.use(function(err, req, res, next) {
 
 
 io.on('connection', (socket) => {
-  io.on('joinRoom', (data) => {
+  socket.on('joinRoom', (data) => {
     let index = hostId.indexOf(data);
     if(index == -1){
-      io.emit('error', '존재하는 호스트가 없습니다.');
+      socket.emit('err', {'message' : 'not exsist HostId'});
     } else {
-      guests[index].push(socket.client.id);
+      console.log(hostIp);
+      console.log(hostId);
+      guests[index].push(socket.id);
     }
   });
 });
 
 server.createServer( (client) => {
+  console.log(client.remoteAddress);
   client.on('data', (data) => {
     let index = hostIp.indexOf(client.remoteAddress);
-    guests[index].forEach(element => {
-      io.to(element).emit('screen', data);
-    });
+    if(guests[index] != null){
+      guests[index].forEach(element => {
+        io.to(element).emit('screen', data);
+      });
+    }
   })
 }).listen(3001);
 
