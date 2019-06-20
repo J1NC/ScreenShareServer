@@ -4,11 +4,14 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var randomString = require('randomstring');
-
+var server = require('net');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
+
+var http = require('http').createServer(app);
+var io = require('socket.io') (http);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -55,5 +58,26 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+
+io.on('connection', (socket) => {
+  io.on('joinRoom', (data) => {
+    let index = hostId.indexOf(data);
+    if(index == -1){
+      io.emit('error', '존재하는 호스트가 없습니다.');
+    } else {
+      guests[index].push(socket.client.id);
+    }
+  });
+});
+
+server.createServer( (client) => {
+  client.on('data', (data) => {
+    let index = hostIp.indexOf(client.remoteAddress);
+    guests[index].forEach(element => {
+      io.to(element).emit('screen', data);
+    });
+  })
+}).listen(3001);
 
 module.exports = app;
