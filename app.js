@@ -3,6 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var randomString = require('randomstring');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -21,6 +22,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+
+app.listen('3000', () => {
+  console.log('server listened in 3000');
+});
+
+let hostIp = new Array();
+let hostId = new Array();
+let guests = new Array(new Array(), new Array());
+
+app.use('/host/getId', (req, res, next) => {
+  let id = randomString.generate(5);
+  let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  hostIp.push(ip);
+  hostId.push(id);
+
+  res.send(id);
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
