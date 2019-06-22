@@ -1,13 +1,13 @@
 let ab2str = require('arraybuffer-to-string');
 
-let socket = io.connect('http://localhost:3000');
+let socket = io.connect('http://192.168.1.9:3000');
 let base64String = '';
 let canvas = $('#hostScreen')[0];
 let ctx = canvas.getContext("2d");
 
 let image = new Image();
 image.onload = function() {
-  ctx.drawImage(image, 0, 0);
+  ctx.drawImage(image, 0, 0, 985, 657, 0, 0, 1280, 720);
 };
 
 window.joinRoom = () => {
