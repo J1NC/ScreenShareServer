@@ -76,10 +76,24 @@ server.createServer( (client) => {
     let index = hostIp.indexOf(client.remoteAddress);
     if(guests[index] != null){
       guests[index].forEach(element => {
-        io.to(element).emit('screen', data);
+        io.to(element).emit('screen', data.toString());
       });
     }
   })
 }).listen(3001);
 
+/*
+wss.on("connection", (ws) => {
+  ws.on("message", function(data) {
+    let index = hostId.indexOf(data);
+    if(index == -1){
+      let returnData = {event : 'err', message: 'Nonexistent HostId'};
+      ws.send(JSON.stringify(returnData));
+    } else {
+      console.log('connected');
+      guests[index].push(ws);
+    }
+  });
+});
+*/
 module.exports = app;
