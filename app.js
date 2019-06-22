@@ -58,15 +58,21 @@ app.use(function(err, req, res, next) {
 
 
 io.on('connection', (socket) => {
+  let roomIdx;
   socket.on('joinRoom', (data) => {
-    let index = hostId.indexOf(data);
-    if(index == -1){
-      socket.emit('err', {'message' : 'not exsist HostId'});
+    roomIdx = hostId.indexOf(data);
+    if(roomIdx == -1){
+      socket.emit('err', 'Not exsist HostId');
     } else {
       console.log(hostIp);
       console.log(hostId);
-      guests[index].push(socket.id);
+      guests[roomIdx].push(socket.id);
+      socket.emit('suc', 'Joined!');
     }
+  });
+  socket.on('disconnect', () => {
+    guestsIdx = guests[roomIdx].indexOf(socket.id);
+    guests[roomidx].splice(guestsIdx, 1);
   });
 });
 
@@ -79,21 +85,22 @@ server.createServer( (client) => {
         io.to(element).emit('screen', data.toString());
       });
     }
-  })
+  });
+
+  client.on('end', () => {
+    let index = hostIp.indexOf(client.remoteAddress);
+
+    if(guests[index] != null){
+      guests[index].forEach(element => {
+        io.to(element).emit('exit', 'Host Exited');
+      });
+    }
+
+    hostId.splice(index, 1);
+    hostIp.splice(index, 1);
+    guests.splice(index, 1);
+  }); 
+
 }).listen(3001);
 
-/*
-wss.on("connection", (ws) => {
-  ws.on("message", function(data) {
-    let index = hostId.indexOf(data);
-    if(index == -1){
-      let returnData = {event : 'err', message: 'Nonexistent HostId'};
-      ws.send(JSON.stringify(returnData));
-    } else {
-      console.log('connected');
-      guests[index].push(ws);
-    }
-  });
-});
-*/
 module.exports = app;

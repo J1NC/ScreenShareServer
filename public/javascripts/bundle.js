@@ -62,11 +62,14 @@ image.onload = function() {
 
 window.joinRoom = () => {
     socket.emit('joinRoom', $('#hostId').val());
-    $('#hostId').prop('disabled', true);
 }
-socket.on('err', (data) =>{
-    alert(data.message);
-    $('#hostId').prop('disabled', false);
+socket.on('err', (message) => {
+    alert(message);
+});
+
+socket.on('suc', (message) => {
+    alert(message);
+    $('#hostId').prop('disabled', true);
 });
 
 socket.on('screen', (screenData) => {
@@ -79,5 +82,11 @@ socket.on('screen', (screenData) => {
     } else {
         base64String += screenData;
     }
+})
+
+socket.on('exit', (message) => {
+    alert(message);
+
+    location.reload();
 })
 },{"arraybuffer-to-string":1}]},{},[2]);
