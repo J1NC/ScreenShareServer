@@ -39,3 +39,7 @@ socket.on('exit', (message) => {
 
     location.reload();
 })
+
+socket.on('headcount', (data) => {
+    $('#headCount').html(data + "명이 현재 접속 중 입니다.");
+})

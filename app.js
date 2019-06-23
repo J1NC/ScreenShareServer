@@ -68,11 +68,16 @@ io.on('connection', (socket) => {
       console.log(hostId);
       guests[roomIdx].push(socket.id);
       socket.emit('suc', 'Joined!');
+      guests[roomIdx].forEach(element => {
+        io.to(element).emit('headcount', guests[roomIdx].length);
+      });
     }
   });
+
   socket.on('disconnect', () => {
     guestsIdx = guests[roomIdx].indexOf(socket.id);
-    guests[roomidx].splice(guestsIdx, 1);
+    if(guestsIdx != -1)
+      guests[roomIdx].splice(guestsIdx, 1);
   });
 });
 
