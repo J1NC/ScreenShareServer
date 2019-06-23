@@ -50,7 +50,7 @@ function toHex (n) {
 },{}],2:[function(require,module,exports){
 let ab2str = require('arraybuffer-to-string');
 
-let socket = io.connect('http://192.168.1.9:3000');
+let ws = new WebSocket('ws://10.80.161.110:3100');
 let base64String = '';
 let canvas = $('#hostScreen')[0];
 let ctx = canvas.getContext("2d");
@@ -61,36 +61,66 @@ image.onload = function() {
 };
 
 window.joinRoom = () => {
-    socket.emit('joinRoom', $('#hostId').val());
+    let req = {event: 'joinRoom', data: $('#hostId').val()}
+    ws.send(JSON.stringify(req));
 }
-socket.on('err', (message) => {
-    alert(message);
-});
 
-socket.on('suc', (message) => {
-    alert(message);
-    $('#hostId').prop('disabled', true);
-});
+ws.onmessage = (response) => {
+    let res = JSON.parse(response.data);
+    let event = res.event;
+    let message = res.message;
 
-socket.on('screen', (screenData) => {
-    let data = '';
-    data = screenData;
-    if(data.indexOf('&end') != -1){
-        base64String += screenData.replace('&end','');
-        image.src = "data:image/png;base64," + base64String;
-        base64String = '';
-    } else {
-        base64String += screenData;
+    if(event != 'screen' && event != 'headcount')
+        alert(message);
+    switch(event){
+        case 'suc' : 
+            $('#hostId').prop('disabled', true);
+            break;
+        case 'exit' : 
+            location.reload();
+            break;
+        case 'headcount' :
+            $('#headCount').html(message + "명이 현재 접속 중 입니다.");
+            break;
+        case 'screen' :
+            if(message.indexOf('&end') != -1){
+                base64String += message.replace('&end','');
+                image.src = "data:image/png;base64," + base64String;
+                base64String = '';
+            } else {
+                base64String += message;
+            }
+            break;
     }
-})
+}
+// socket.on('err', (message) => {
+//     alert(message);
+// });
 
-socket.on('exit', (message) => {
-    alert(message);
+// socket.on('suc', (message) => {
+//     alert(message);
+//     $('#hostId').prop('disabled', true);
+// });
 
-    location.reload();
-})
+// socket.on('screen', (screenData) => {
+//     let data = '';
+//     data = screenData;
+//     if(data.indexOf('&end') != -1){
+//         base64String += screenData.replace('&end','');
+//         image.src = "data:image/png;base64," + base64String;
+//         base64String = '';
+//     } else {
+//         base64String += screenData;
+//     }
+// })
 
-socket.on('headcount', (data) => {
-    $('#headCount').html(data + "명이 현재 접속 중 입니다.");
-})
+// socket.on('exit', (message) => {
+//     alert(message);
+
+//     location.reload();
+// })
+
+// socket.on('headcount', (data) => {
+//     $('#headCount').html(data + "명이 현재 접속 중 입니다.");
+// })
 },{"arraybuffer-to-string":1}]},{},[2]);

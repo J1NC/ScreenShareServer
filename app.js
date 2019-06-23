@@ -11,7 +11,7 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 var appServer = app.listen(3000);
-var io = require('socket.io').listen(appServer);
+var WebSocketServer = require('ws').Server
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -57,37 +57,41 @@ app.use(function(err, req, res, next) {
 });
 
 
-io.on('connection', (socket) => {
-  let roomIdx;
-  socket.on('joinRoom', (data) => {
-    roomIdx = hostId.indexOf(data);
-    if(roomIdx == -1){
-      socket.emit('err', 'Not exsist HostId');
-    } else {
-      console.log(hostIp);
-      console.log(hostId);
-      guests[roomIdx].push(socket.id);
-      socket.emit('suc', 'Joined!');
-      guests[roomIdx].forEach(element => {
-        io.to(element).emit('headcount', guests[roomIdx].length);
-      });
-    }
-  });
+// io.on('connection', (socket) => {
+//   let roomIdx;
+//   socket.on('joinRoom', (data) => {
+//     roomIdx = hostId.indexOf(data);
+//     if(roomIdx == -1){
+//       socket.emit('err', 'Not exsist HostId');
+//     } else {
+//       console.log(hostIp);
+//       console.log(hostId);
+//       guests[roomIdx].push(socket.id);
+//       socket.emit('suc', 'Joined!');
+//       guests[roomIdx].forEach(element => {
+//         io.to(element).emit('headcount', guests[roomIdx].length);
+//       });
+//     }
+//   });
 
-  socket.on('disconnect', () => {
-    guestsIdx = guests[roomIdx].indexOf(socket.id);
-    if(guestsIdx != -1)
-      guests[roomIdx].splice(guestsIdx, 1);
-  });
-});
+//   socket.on('disconnect', () => {
+//     if(guests[roomIdx] != null){
+//       guestsIdx = guests[roomIdx].indexOf(socket.id);
+//       if(guestsIdx != -1)
+//         guests[roomIdx].splice(guestsIdx, 1);
+//     }  
+//   });
+  
+// });
 
 server.createServer( (client) => {
   console.log(client.remoteAddress);
   client.on('data', (data) => {
     let index = hostIp.indexOf(client.remoteAddress);
     if(guests[index] != null){
+      let res = {event: 'screen', message: data.toString()}
       guests[index].forEach(element => {
-        io.to(element).emit('screen', data.toString());
+        element.send(JSON.stringify(res));
       });
     }
   });
@@ -96,8 +100,9 @@ server.createServer( (client) => {
     let index = hostIp.indexOf(client.remoteAddress);
 
     if(guests[index] != null){
+      let res = {event: 'exit', message: 'Host Exited'};
       guests[index].forEach(element => {
-        io.to(element).emit('exit', 'Host Exited');
+        element.send(JSON.stringify(res));
       });
     }
 
@@ -107,5 +112,46 @@ server.createServer( (client) => {
   }); 
 
 }).listen(3001);
+
+var wss = new WebSocketServer({port: 3100});
+
+wss.on('connection', (ws) => {
+  let roomIdx;
+  ws.on('message', (request) => {
+    let req = JSON.parse(request);
+    let event = req.event;
+    let data = req.data;
+    switch(event){
+      case 'joinRoom' : 
+        roomIdx = hostId.indexOf(data);
+        let res;
+        if(roomIdx == -1){
+          res = {event: 'err', message: 'Not exsist HostId'};
+          ws.send(JSON.stringify(res));
+        } else {
+          console.log(hostIp);
+          console.log(hostId);
+          guests[roomIdx].push(ws);
+
+          res = {event: 'suc', message: 'Joined!'};
+          ws.send(JSON.stringify(res));
+          res = {event: 'headcount', message: guests[roomIdx].length};
+          res = JSON.stringify(res);
+          guests[roomIdx].forEach(element => {
+            element.send(res);
+          });
+        }
+      break;
+    }
+  });
+
+  ws.on('close', () => {
+    if(guests[roomIdx] != null){
+      let guestsIdx = guests[roomIdx].indexOf(ws);
+      if(guestsIdx != -1)
+        guests[roomIdx].splice(guestsIdx, 1);
+    }
+  })
+});
 
 module.exports = app;
